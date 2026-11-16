@@ -19,7 +19,23 @@ provider:
       Resource: "*"
 
 custom:
+  # Custom domain is attached to prod only; other stages keep the default cloudfront.net URL
+  domains:
+    prod:
+      - shaileshwedsshubhangi.in
+      - www.shaileshwedsshubhangi.in
+  certificates:
+    prod: arn:aws:acm:us-east-1:149997402955:certificate/49de4548-f5f5-42cc-8c23-52d1b3e3f66e
+  tlsVersions:
+    prod: TLSv1.2_2021
+  # CNAME from the ACM console (certificate > Domains, shared by both names); kept in Route 53 so the cert can auto-renew
+  certValidation:
+    name: _3d5bca3e9d5e04fbbcacac1fa19eb2f2.shaileshwedsshubhangi.in.
+    value: _d2720a5c923c382463c427d6a8793500.wzccmgtwzk.acm-validations.aws.
   fullstack:
+    domain: ${self:custom.domains.${self:provider.stage}, null}
+    certificate: ${self:custom.certificates.${self:provider.stage}, null}
+    minimumProtocolVersion: ${self:custom.tlsVersions.${self:provider.stage}, null}
     bucketName: ${self:service}
     distributionFolder: dist/shailesh-weds-shubhangi/browser
     indexDocument: index.html
@@ -37,7 +53,44 @@ custom:
           responsePagePath: /index.html
 
 resources:
+  Conditions:
+    IsProd: !Equals ["${sls:stage}", "prod"]
+  Outputs:
+    HostedZoneNameServers:
+      Condition: IsProd
+      Description: Set these as custom nameservers in GoDaddy
+      Value: !Join [", ", !GetAtt HostedZone.NameServers]
   Resources:
+    HostedZone:
+      Type: AWS::Route53::HostedZone
+      Condition: IsProd
+      Properties:
+        Name: ${self:custom.domains.prod.0}
+    DomainRecords:
+      Type: AWS::Route53::RecordSetGroup
+      Condition: IsProd
+      Properties:
+        HostedZoneId: !Ref HostedZone
+        RecordSets:
+          - Name: ${self:custom.domains.prod.0}
+            Type: A
+            AliasTarget: &cloudfrontAlias
+              DNSName: !GetAtt ApiDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2 # fixed hosted zone id for all CloudFront aliases
+          - Name: ${self:custom.domains.prod.0}
+            Type: AAAA
+            AliasTarget: *cloudfrontAlias
+          - Name: ${self:custom.domains.prod.1}
+            Type: A
+            AliasTarget: *cloudfrontAlias
+          - Name: ${self:custom.domains.prod.1}
+            Type: AAAA
+            AliasTarget: *cloudfrontAlias
+          - Name: ${self:custom.certValidation.name}
+            Type: CNAME
+            TTL: "300"
+            ResourceRecords:
+              - ${self:custom.certValidation.value}
     OriginAccessIdentity:
       Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
       Properties:
