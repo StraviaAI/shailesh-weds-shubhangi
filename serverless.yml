@@ -19,7 +19,19 @@ provider:
       Resource: "*"
 
 custom:
+  # Custom domain is attached to prod only; other stages keep the default cloudfront.net URL
+  domains:
+    prod:
+      - shaileshwedsshubhangi.in
+      - www.shaileshwedsshubhangi.in
+  certificates:
+    prod: arn:aws:acm:us-east-1:149997402955:certificate/49de4548-f5f5-42cc-8c23-52d1b3e3f66e
+  tlsVersions:
+    prod: TLSv1.2_2021
   fullstack:
+    domain: ${self:custom.domains.${self:provider.stage}, null}
+    certificate: ${self:custom.certificates.${self:provider.stage}, null}
+    minimumProtocolVersion: ${self:custom.tlsVersions.${self:provider.stage}, null}
     bucketName: ${self:service}
     distributionFolder: dist/shailesh-weds-shubhangi/browser
     indexDocument: index.html
