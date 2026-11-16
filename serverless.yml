@@ -19,15 +19,15 @@ provider:
       Resource: "*"
 
 custom:
-  # Custom domain is attached to prod only; other stages keep the default cloudfront.net URL
+  # Custom domain is attached to dev (the live site) only; other stages keep the default cloudfront.net URL
   domains:
-    prod:
+    dev:
       - shaileshwedsshubhangi.in
       - www.shaileshwedsshubhangi.in
   certificates:
-    prod: arn:aws:acm:us-east-1:149997402955:certificate/49de4548-f5f5-42cc-8c23-52d1b3e3f66e
+    dev: arn:aws:acm:us-east-1:149997402955:certificate/49de4548-f5f5-42cc-8c23-52d1b3e3f66e
   tlsVersions:
-    prod: TLSv1.2_2021
+    dev: TLSv1.2_2021
   # CNAME from the ACM console (certificate > Domains, shared by both names); kept in Route 53 so the cert can auto-renew
   certValidation:
     name: _3d5bca3e9d5e04fbbcacac1fa19eb2f2.shaileshwedsshubhangi.in.
@@ -54,36 +54,36 @@ custom:
 
 resources:
   Conditions:
-    IsProd: !Equals ["${sls:stage}", "prod"]
+    IsDev: !Equals ["${sls:stage}", "dev"]
   Outputs:
     HostedZoneNameServers:
-      Condition: IsProd
+      Condition: IsDev
       Description: Set these as custom nameservers in GoDaddy
       Value: !Join [", ", !GetAtt HostedZone.NameServers]
   Resources:
     HostedZone:
       Type: AWS::Route53::HostedZone
-      Condition: IsProd
+      Condition: IsDev
       Properties:
-        Name: ${self:custom.domains.prod.0}
+        Name: ${self:custom.domains.dev.0}
     DomainRecords:
       Type: AWS::Route53::RecordSetGroup
-      Condition: IsProd
+      Condition: IsDev
       Properties:
         HostedZoneId: !Ref HostedZone
         RecordSets:
-          - Name: ${self:custom.domains.prod.0}
+          - Name: ${self:custom.domains.dev.0}
             Type: A
             AliasTarget: &cloudfrontAlias
               DNSName: !GetAtt ApiDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2 # fixed hosted zone id for all CloudFront aliases
-          - Name: ${self:custom.domains.prod.0}
+          - Name: ${self:custom.domains.dev.0}
             Type: AAAA
             AliasTarget: *cloudfrontAlias
-          - Name: ${self:custom.domains.prod.1}
+          - Name: ${self:custom.domains.dev.1}
             Type: A
             AliasTarget: *cloudfrontAlias
-          - Name: ${self:custom.domains.prod.1}
+          - Name: ${self:custom.domains.dev.1}
             Type: AAAA
             AliasTarget: *cloudfrontAlias
           - Name: ${self:custom.certValidation.name}

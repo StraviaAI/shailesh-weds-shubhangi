@@ -38,6 +38,6 @@ jobs:
     - name: List dist folder
       run: ls -R dist/shailesh-weds-shubhangi/browser
     - name: Deploy Static Website
-      run: sls deploy --stage dev
+      run: sls deploy --stage dev --verbose  # --verbose prints stack outputs (Route 53 nameservers)
     # - name: remove Static Website
     #   run: sls remove --region us-east-1 --stage dev
