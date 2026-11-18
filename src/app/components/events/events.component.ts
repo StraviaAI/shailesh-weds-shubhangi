@@ -47,7 +47,7 @@ export class EventsComponent {
     {
       title: 'Wedding Ceremony',
       date: 'November 26, 2026',
-      time: '12:01 PM (Muhurat)',
+      time: '12:14 PM (Muhurat)',
       venue: 'Baheti Mangal Karyalaya',
       address: 'Bansilal Nagar Walur Road, Sailu, Maharashtra',
       icon: 'fa-heart couple__and-heart',
